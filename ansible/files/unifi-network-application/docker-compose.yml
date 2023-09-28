@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  unifi:
+    container_name: unifi
+    depends_on:
+      - mongo
+    environment:
+      - PUID=501
+      - PGID=20
+      - TZ=America/Los_Angeles
+      - MONGO_USER=unifi
+      - MONGO_PASS=REPLACEME
+      - MONGO_HOST=mongo
+      - MONGO_PORT=27017
+      - MONGO_DBNAME=unifi
+    image: lscr.io/linuxserver/unifi-network-application:latest
+    ports:
+      - 8443:8443
+      - 3478:3478/udp
+      - 10001:10001/udp
+      - 8080:8080
+      - 1900:1900/udp
+      - 8843:8843
+      - 8880:8880
+      - 6789:6789
+      - 5514:5514/udp
+    restart: unless-stopped
+    volumes:
+      - ./unifi/:/config
+
+  mongo:
+    container_name: mongo
+    image: mongo:4.4
+    ports:
+      - 27017:27017
+    restart: always
+    volumes:
+      - ./configs/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./mongo/data/:/data/db

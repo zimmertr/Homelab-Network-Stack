@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+    environment:
+      TZ: 'America/Los_Angeles'
+      WEBPASSWORD: 'REPLACEME'
+      PIHOLE_DNS_: '8.8.8.8;8.8.4.4'
+      DNS_BOGUS_PRIV: 'false'
+      DNS_FQDN_REQUIRED: 'false'
+    restart: unless-stopped
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'

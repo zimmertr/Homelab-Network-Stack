@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  admin:
+    image: powerdnsadmin/pda-legacy:latest
+    container_name: admin
+    depends_on:
+      - auth
+      - mariadb-admin
+      - mariadb-auth
+    environment:
+      - SECRET_KEY=REPLACEME
+      - SQLALCHEMY_DATABASE_URI=mysql://pdns:REPLACEME@mariadb-admin/pdns
+      - GUNICORN_TIMEOUT=60
+      - GUNICORN_WORKERS=2
+      - GUNICORN_LOGLEVEL=DEBUG
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  auth:
+    image: powerdns/pdns-auth-master:latest
+    container_name: auth
+    depends_on:
+      - mariadb-auth
+    environment:
+      - PDNS_AUTH_API_KEY=REPLACEME
+    ports:
+      - "1053:53"
+      - "1053:53/udp"
+      - "8081:8081"
+    restart: unless-stopped
+    volumes:
+      - ./configs/auth.conf:/etc/powerdns/pdns.conf:ro
+      - ./configs/create-records.sh:/tmp/create-records.sh:ro
+
+  # dnsdist:
+  #   image: powerdns/dnsdist-master:latest
+  #   container_name: dnsdist
+  #   environment:
+  #     - DNSDIST_API_KEY=REPLACEME
+  #   links:
+  #     - recursor
+  #     - auth
+  #   ports:
+  #     - "3053:53"
+  #     - "3053:53/udp"
+  #     - "5199:5199"
+  #     - "8083:8083"
+  #   restart: unless-stopped
+
+  mariadb-admin:
+    image: mariadb:11
+    container_name: mariadb-admin
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=pdns
+      - MYSQL_USER=pdns
+      - MYSQL_PASSWORD=REPLACEME
+    ports:
+      - 3306:3306
+    restart: unless-stopped
+    volumes:
+      - ./mariadb-admin:/var/lib/mysql
+
+  mariadb-auth:
+    image: mariadb:11
+    container_name: mariadb-auth
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=pdns
+      - MYSQL_USER=pdns
+      - MYSQL_PASSWORD=REPLACEME
+    ports:
+      - 3307:3306
+    restart: unless-stopped
+    volumes:
+      - ./mariadb-auth:/var/lib/mysql
+      - ./configs/auth-init.sql:/docker-entrypoint-initdb.d/auth-init.sql:ro
+
+  recursor:
+    image: powerdns/pdns-recursor-master:latest
+    container_name: recursor
+    environment:
+      - PDNS_RECURSOR_API_KEY=REPLACEME
+    ports:
+      - "53:53"
+      - "53:53/udp"
+      - "8082:8082"
+    restart: unless-stopped
+    volumes:
+      - ./configs/recursor.conf:/etc/powerdns/recursor.conf:ro

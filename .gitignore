@@ -1,0 +1,6 @@
+# Terraform
+.terraform*
+*.tfstate*
+
+# Secrets
+config.env
